@@ -1,0 +1,20 @@
+services:
+    agent:
+      image: coding-agent
+      # container_name: xxx (wie der Docker heißt)
+      stdin_open: true
+      tty: true
+      mem_limit: 16g
+      memswap_limit: 16g
+      cpus: 4
+      pids_limit: 512
+      environment:
+        - PATH=/root/.local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+        - IS_SANDBOX=1
+      volumes:
+        - .:/home/agent/project
+        - claude-shared:/root
+      working_dir: /home/agent/project
+volumes:
+  claude-shared:
+    external: true
