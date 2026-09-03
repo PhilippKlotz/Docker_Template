@@ -83,6 +83,40 @@ RUN curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key | \
 # === 5. Claude Code (native binary, does not require Node.js) ===
 RUN curl -fsSL https://claude.ai/install.sh | bash
 
+# === 5b. Wrapper: Claude Code gegen Z.ai (GLM) statt Anthropic ===
+# Liegt bewusst in /usr/local/bin, NICHT unter /root -- /root wird zur
+# Laufzeit vom Volume "claude-shared" ueberdeckt.
+# Aufruf im Container:  claude       -> normal (Anthropic)
+#                       claude-zai   -> GLM via Z.ai
+RUN printf '%s\n' \
+    '#!/usr/bin/env bash' \
+    'set -euo pipefail' \
+    '' \
+    'if [ -z "${ZAI_API_KEY:-}" ]; then' \
+    '  echo "ZAI_API_KEY ist nicht gesetzt (siehe .env / docker-compose.yml)." >&2' \
+    '  exit 1' \
+    'fi' \
+    '' \
+    '# Eigenes Config-Verzeichnis: trennt Session-History, Login und' \
+    '# settings.json vollstaendig vom normalen Claude Code in ~/.claude' \
+    'export CLAUDE_CONFIG_DIR="${CLAUDE_CONFIG_DIR:-/root/.claude-zai}"' \
+    'mkdir -p "$CLAUDE_CONFIG_DIR"' \
+    '' \
+    'export ANTHROPIC_BASE_URL="https://api.z.ai/api/anthropic"' \
+    'export ANTHROPIC_AUTH_TOKEN="$ZAI_API_KEY"' \
+    'unset ANTHROPIC_API_KEY' \
+    '' \
+    'export API_TIMEOUT_MS=3000000' \
+    'export CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC=1' \
+    'export CLAUDE_CODE_AUTO_COMPACT_WINDOW=1000000' \
+    'export ANTHROPIC_DEFAULT_HAIKU_MODEL="glm-5.3-flash[1m]"' \
+    'export ANTHROPIC_DEFAULT_SONNET_MODEL="glm-5.3[1m]"' \
+    'export ANTHROPIC_DEFAULT_OPUS_MODEL="glm-5.3[1m]"' \
+    '' \
+    'exec claude "$@"' \
+    > /usr/local/bin/claude-zai \
+    && chmod +x /usr/local/bin/claude-zai
+
 # === 6. OpenAI Codex ===
 RUN npm install -g @openai/codex
 

@@ -8,9 +8,17 @@ services:
       memswap_limit: 16g
       cpus: 4
       pids_limit: 512
+      # ZAI_API_KEY aus einer .env-Datei neben dieser docker-compose.yml lesen.
+      # Datei nicht ins Git committen!
+      env_file:
+        - path: .env
+          required: false
       environment:
         - PATH=/root/.local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
         - IS_SANDBOX=1
+        # Wird nur vom Wrapper "claude-zai" ausgewertet.
+        # Das normale "claude" sieht davon nichts.
+        - ZAI_API_KEY=${ZAI_API_KEY:-}
       volumes:
         - .:/home/agent/project
         - claude-shared:/root
